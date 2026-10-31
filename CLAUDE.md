@@ -5,10 +5,10 @@ Support for Windows 8 Embedded (the main target), without neglecting the most re
 
 # Development stack
 
-- Rust 1.77.2 so the binaries can run on Windows 8 Embedded.
+- Rust must be at version 1.77.2 so the binaries can run on Windows 8 Embedded.
 - GitHub Spec Kit: https://github.com/github/spec-kit
 - Log: https://github.com/rust-lang/log
 
 # Code convention
 
-- Use Result instead of exceptions.
+- Prohibited usage of unwrap() and expect() in production code.
