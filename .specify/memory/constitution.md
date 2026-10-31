@@ -1,21 +1,21 @@
 <!--
 Sync Impact Report
-- Version change: (unversioned template) → 1.0.0
-- Modified principles (placeholder → new title):
-  - [PRINCIPLE_1_NAME] → I. Windows 8 Embedded First (NON-NEGOTIABLE)
-  - [PRINCIPLE_2_NAME] → II. Pinned Toolchain & Dependency Discipline
-  - [PRINCIPLE_3_NAME] → III. No Panics in Production Code
-  - [PRINCIPLE_4_NAME] → IV. Faithful, Transparent Proxying
-  - [PRINCIPLE_5_NAME] → V. Observability Through `log`
-  - Added: VI. Security of Intercepted Traffic
-  - Added: VII. CLI-First Simplicity
-- Added sections: Platform & Technology Constraints; Development Workflow & Quality Gates
+- Version change: 1.0.0 → 1.1.0 (MINOR: two principles added, quality gates expanded)
+- Modified principles: none renamed
+- Added principles:
+  - VIII. Spec-Driven Development (specs are the source of truth)
+  - IX. Test-Driven Development (NON-NEGOTIABLE)
+- Modified sections:
+  - Development Workflow & Quality Gates: added test-first, one-scenario-per-test and
+    spec-conformance gates; Constitution Check now covers Principles I–IX
+  - Governance: specs ranked as source of truth for behavior, below this constitution
 - Removed sections: none
 - Templates requiring updates: none modified by this command (templates read the
   constitution at runtime)
-- Follow-up TODOs:
-  - Cargo.toml declares `edition = "2024"`, which Rust 1.77.2 cannot compile; it MUST
-    be changed to `edition = "2021"` and `rust-version = "1.77.2"` added (Principle II).
+- Resolved TODOs from 1.0.0:
+  - Cargo.toml now declares `edition = "2021"` and `rust-version = "1.77.2"`, and
+    `rust-toolchain.toml` pins 1.77.2 (Principle II satisfied).
+- Follow-up TODOs: none
 -->
 
 # open-middleman-cli Constitution
@@ -122,6 +122,33 @@ would turn a debugging tool into a liability.
 **Rationale**: Simple tools are easier to port, audit, and keep compatible with an old
 platform.
 
+### VIII. Spec-Driven Development
+
+- Specifications (`spec.md`, `plan.md`, `tasks.md` and related Spec Kit artifacts) are
+  the source of truth for behavior, not the code.
+- No feature or behavior change MAY be implemented without a spec that describes it; when
+  behavior must change, the spec MUST be updated first and the code second.
+- When code does not follow its spec, a conformance report MUST be produced that cites
+  both the code location (file and line) and the spec requirement it violates. The
+  divergence MUST then be resolved by fixing the code or by amending the spec — never by
+  leaving the two silently inconsistent.
+
+**Rationale**: Keeping intent in specs makes behavior reviewable, portable across
+refactors, and checkable without reading the implementation.
+
+### IX. Test-Driven Development (NON-NEGOTIABLE)
+
+- Test code MUST be written before the production code it exercises, and MUST be run and
+  seen to fail (Red) before the implementation is written (Green), followed by Refactor.
+- Tests MUST cover as many scenarios as practical for each requirement: success paths,
+  error paths, boundary values, and malformed or hostile input.
+- Each test function MUST cover exactly one scenario; its name MUST describe that
+  scenario. Multiple unrelated assertions about different scenarios in one test are
+  PROHIBITED.
+
+**Rationale**: Tests written first prove that each requirement is testable and actually
+exercised; one scenario per test makes a failure point directly at the broken behavior.
+
 ## Platform & Technology Constraints
 
 - **Language**: Rust 1.77.2, edition 2021, pinned via `rust-toolchain.toml`.
@@ -147,14 +174,20 @@ Before a change is merged:
    Embedded (a real device or VM) before release; secondary platforms MUST at least build.
 5. Proxy behavior changes MUST include integration tests that run real HTTP/HTTPS
    exchanges through the proxy against a local test server.
-6. Every feature plan MUST include a Constitution Check that confirms compliance with
-   Principles I–VII or records a justified exception.
+6. Task lists MUST order test tasks before the implementation tasks they cover, and
+   reviews MUST confirm that each test covers a single scenario (Principle IX).
+7. The implemented behavior MUST match its spec; any divergence MUST be reported and
+   resolved as described in Principle VIII before merge.
+8. Every feature plan MUST include a Constitution Check that confirms compliance with
+   Principles I–IX or records a justified exception.
 
 ## Governance
 
 - This constitution overrides other project practices. Where `CLAUDE.md` or other
   guidance files conflict with it, the constitution wins, and the conflicting file MUST be
   updated.
+- Below this constitution, feature specifications are the authority on behavior; code and
+  tests MUST conform to them (Principle VIII).
 - Amendments require a documented change to this file, a Sync Impact Report, a version
   bump, and a migration note for any work affected.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle,
@@ -165,4 +198,4 @@ Before a change is merged:
 - `CLAUDE.md` provides runtime development guidance for AI-assisted work and MUST stay
   consistent with this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-31 | **Last Amended**: 2026-10-31
+**Version**: 1.1.0 | **Ratified**: 2026-10-31 | **Last Amended**: 2026-10-31
