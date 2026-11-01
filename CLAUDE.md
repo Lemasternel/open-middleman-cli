@@ -8,6 +8,7 @@ Support for Windows 8 Embedded (the main target), without neglecting the most re
 - Rust must be at version 1.77.2 so the binaries can run on Windows 8 Embedded.
 - GitHub Spec Kit: https://github.com/github/spec-kit
 - Log: https://github.com/rust-lang/log
+- Clap: https://github.com/clap-rs/clap
 
 # III. Development methodologies
 
