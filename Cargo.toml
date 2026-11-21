@@ -10,3 +10,4 @@ clap = { version = "4.5.60", features = ["derive"] }
 [lints.clippy]
 unwrap_used = "deny"
 expect_used = "deny"
+panic = "deny"
