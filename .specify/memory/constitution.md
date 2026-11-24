@@ -1,3 +1,31 @@
+<!--
+Sync Impact Report
+- Version change: 1.0.0 -> 1.1.0 (MINOR).
+- Added principle: VII. Mandatory Logging. Every significant operation and
+  every failure path of the CLI MUST be logged with a severity level and
+  context; log records never go to stdout, so they cannot corrupt the user
+  contract of Principle VI. The principle does not name a logging library.
+- Removed from Additional Constraints (stack, not constitution):
+  - the logging library and its link (`log` crate) and the requirement to pin
+    it in `Cargo.lock`;
+  - the argument-parsing library (`clap` derive);
+  - the "Rust toolchain: 1.77.2" bullet, already covered by Principle IV.
+- Kept on purpose: Windows 8 Embedded target, `x86_64-pc-windows-msvc`,
+  `rust-version = "1.77.2"`, edition 2021, the pinned toolchain and the legacy
+  console requirement in Principle IV, because they are compatibility
+  requirements of the main target, not stack choices. Also kept: the
+  dependency on `open-middleman-lib` pinned in `Cargo.lock` (it defines the
+  project, see Principle I), GitHub Spec Kit (process) and the clippy lints
+  that enforce Principle V.
+- Rationale: logging is a core requirement of a debugging proxy; the libraries
+  chosen to implement logging and argument parsing are implementation
+  decisions that belong to the plan, not to the constitution. Same change as
+  open-middleman-lib constitution 2.3.0.
+- Backwards compatibility: no code exists yet that emits logs, so nothing
+  breaks; future features MUST include logging in their specs and plans.
+- Follow-up files: none required. Specs and plans written from now on MUST
+  describe the logging of each feature.
+-->
 # open-middleman-cli Constitution
 
 ## Core Principles
@@ -56,16 +84,25 @@ means success and non-zero means failure, with each documented failure class
 mapped to a distinct code. Breaking changes to this contract require a
 specification update and, when incompatible, a MAJOR version bump of the CLI.
 
+### VII. Mandatory Logging
+Logging is REQUIRED, not optional. The CLI MUST emit log records for every
+significant operation (for example: parsing and validating arguments, loading
+configuration, starting and stopping the proxy through the library, opening
+and writing output files) and for every failure path, before the error is
+reported to the user and the process exits. Each record MUST carry a severity
+level (error, warning, info, debug, trace) and enough context to identify the
+operation it describes. As the consuming application, the CLI decides where
+log records are written, including the records emitted by `open-middleman-lib`;
+log records MUST NOT be written to stdout, so they never mix with command
+results. The choice of logging library is an implementation decision recorded
+in the plan, not in this constitution. Every spec and plan MUST state what its
+feature logs, and code review rejects changes that add operations or failure
+paths without logging.
+
 ## Additional Constraints
 
-- Rust toolchain: 1.77.2 (pinned in `rust-toolchain.toml`, declared in `Cargo.toml`).
 - Library dependency: `open-middleman-lib`, pinned to a specific release or
   revision and recorded in `Cargo.lock`.
-- Argument parsing: `clap` (derive), version compatible with 1.77.2 and pinned
-  in `Cargo.lock`.
-- Logging: if the CLI emits logs, it uses the `log` crate
-  (https://github.com/rust-lang/log) facade only, with the version pinned in
-  `Cargo.lock`.
 - Spec process: GitHub Spec Kit (https://github.com/github/spec-kit).
 
 ## Development Workflow
@@ -89,7 +126,8 @@ specification update and, when incompatible, a MAJOR version bump of the CLI.
   leading or trailing hyphens or dots. The default branch (`master`/`main`)
   and `develop`, if used, are exempt.
 - Code review verifies compliance with all Core Principles, in particular
-  that no domain logic has leaked from the library into the CLI.
+  that no domain logic has leaked from the library into the CLI and that the
+  logging required by Principle VII is present.
 - CI builds and tests the CLI on the 1.77.2 toolchain.
 - CI runs clippy with `unwrap_used`, `expect_used` and `panic` denied.
 
@@ -104,4 +142,4 @@ specification update and, when incompatible, a MAJOR version bump of the CLI.
   rule, PATCH for wording and clarifications.
 - Violations must be justified in the plan's Complexity Tracking section.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-21
+**Version**: 1.1.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24
