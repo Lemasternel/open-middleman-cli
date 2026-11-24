@@ -1,37 +1,45 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.1.0 (MINOR).
-- Added principle: VII. Mandatory Logging. Every significant operation and
-  every failure path of the CLI MUST be logged with a severity level and
-  context; log records never go to stdout, so they cannot corrupt the user
-  contract of Principle VI. The principle does not name a logging library.
-- Removed from Additional Constraints (stack, not constitution):
-  - the logging library and its link (`log` crate) and the requirement to pin
-    it in `Cargo.lock`;
-  - the argument-parsing library (`clap` derive);
-  - the "Rust toolchain: 1.77.2" bullet, already covered by Principle IV.
-- Kept on purpose: Windows 8 Embedded target, `x86_64-pc-windows-msvc`,
-  `rust-version = "1.77.2"`, edition 2021, the pinned toolchain and the legacy
-  console requirement in Principle IV, because they are compatibility
-  requirements of the main target, not stack choices. Also kept: the
-  dependency on `open-middleman-lib` pinned in `Cargo.lock` (it defines the
-  project, see Principle I), GitHub Spec Kit (process) and the clippy lints
-  that enforce Principle V.
-- Rationale: logging is a core requirement of a debugging proxy; the libraries
-  chosen to implement logging and argument parsing are implementation
-  decisions that belong to the plan, not to the constitution. Same change as
-  open-middleman-lib constitution 2.3.0.
-- Backwards compatibility: no code exists yet that emits logs, so nothing
-  breaks; future features MUST include logging in their specs and plans.
-- Follow-up files: none required. Specs and plans written from now on MUST
-  describe the logging of each feature.
+- Version change: 1.1.0 -> 2.0.0 (MAJOR).
+- Rationale: the constitution states principles and rules only; it MUST NOT
+  name the programming language, its version, toolchain files, build manifests
+  or lock files, linters or any other stack detail. Those are implementation
+  decisions recorded in the plan. Same change as open-middleman-lib
+  constitution 3.0.0.
+- Redefined principles (stack-specific rules removed or rewritten in a
+  language-agnostic way):
+  - I. Thin Bridge to the Library: "a single Rust binary crate" became "a
+    single command-line executable"; the bridge rules are unchanged.
+  - IV. Target Compatibility: removed the target triple, the minimum language
+    version, the language edition, and the pinned toolchain and build-manifest
+    files. Windows 8 Embedded (x86_64) remains the main target, and every
+    dependency, the toolchain and the library MUST still support it. The legacy
+    Windows console requirement is kept.
+  - V. Production Code Safety: rewritten without language constructs. Aborting
+    the process on unexpected states is still prohibited in production code;
+    failures are still explicit, typed errors turned into a stderr message and
+    a non-zero exit code at the entry point; the rule is still enforced
+    automatically in CI, with the tool chosen in the plan.
+- Additional Constraints: the library dependency is still pinned to a release
+  or revision, without naming the lock file.
+- Development Workflow: the CI rule pinned to a language version became
+  "CI builds and tests for the main target"; the named linter rules became an
+  automated check for Principle V.
+- Unchanged: II, III, VI (Stable User Contract), VII (Mandatory Logging),
+  GitHub Spec Kit, commit and branch rules, Governance.
+- Backwards compatibility: no rule is made stricter; existing code and build
+  configuration still comply. Removing rules from the constitution does not
+  remove them from the repository: the current toolchain and lint settings stay
+  as implementation decisions.
+- Follow-up files: none required. The plan template already keeps language,
+  version and tools in its Technical Context section.
 -->
 # open-middleman-cli Constitution
 
 ## Core Principles
 
 ### I. Thin Bridge to the Library
-The project delivers a single Rust binary crate: a command-line bridge
+The project delivers a single command-line executable: a bridge
 between the user and the functions of `open-middleman-lib`. All domain logic
 (proxying, capture, parsing, filtering, storage) MUST live in the library
 and MUST NOT be reimplemented in this project. The CLI is responsible only
@@ -57,25 +65,23 @@ for its success path, its error path, and its boundary conditions, including
 the exit code and the text written to stdout and stderr.
 
 ### IV. Target Compatibility
-The CLI MUST build and run on Windows 8 Embedded, x86_64
-(`x86_64-pc-windows-msvc`). It declares `rust-version = "1.77.2"` in
-`Cargo.toml`, uses `edition = "2021"` (the 2024 edition requires a newer
-compiler), and the development toolchain is pinned to 1.77.2 via
-`rust-toolchain.toml`. Every dependency (including the argument-parsing
-framework and the library) MUST build on 1.77.2 and MUST NOT require Windows
-APIs unavailable on Windows 8. The console output MUST remain usable on the
-legacy Windows console (no reliance on ANSI/VT sequences without detection
-and a plain-text fallback).
+Windows 8 Embedded (x86_64) is the main target. The CLI MUST build and run
+on it, and support for it MUST NOT be dropped or degraded. The toolchain and
+every dependency, including `open-middleman-lib`, MUST support Windows 8
+Embedded, and nothing used by the CLI MAY require operating system APIs or
+features that are unavailable on Windows 8. A change that breaks Windows 8
+Embedded support is rejected, even if it works on newer systems. The console
+output MUST remain usable on the legacy Windows console (no reliance on
+ANSI/VT sequences without detection and a plain-text fallback).
 
 ### V. Production Code Safety
-`unwrap()`, `expect()` and `panic!()` are prohibited in production code.
-"Production code" is everything outside `#[cfg(test)]` modules and the
-`tests/` directory. Failures are reported through `Result` with an explicit
-error type; `Option` is used only for legitimate absence of a value. The
-`main` function translates errors into a message on stderr and a non-zero
-exit code. Tests may use `unwrap()` and `expect()`.
-Enforced in CI via `clippy::unwrap_used`, `clippy::expect_used` and
-`clippy::panic`.
+Production code MUST NOT abort or crash the process on an unexpected state,
+and MUST NOT assume that an operation which can fail has succeeded. "Production
+code" is everything except test code. Failures are reported as explicit, typed
+errors; an empty value is used only for the legitimate absence of a value,
+never to signal an error. The program's entry point translates errors into a
+message on stderr and a non-zero exit code. Tests may assert and abort freely.
+This rule MUST be enforced by an automated check in CI.
 
 ### VI. Stable User Contract
 Commands, options, output formats and exit codes are the public interface of
@@ -102,7 +108,7 @@ paths without logging.
 ## Additional Constraints
 
 - Library dependency: `open-middleman-lib`, pinned to a specific release or
-  revision and recorded in `Cargo.lock`.
+  revision so that every build uses the same library version.
 - Spec process: GitHub Spec Kit (https://github.com/github/spec-kit).
 
 ## Development Workflow
@@ -128,8 +134,9 @@ paths without logging.
 - Code review verifies compliance with all Core Principles, in particular
   that no domain logic has leaked from the library into the CLI and that the
   logging required by Principle VII is present.
-- CI builds and tests the CLI on the 1.77.2 toolchain.
-- CI runs clippy with `unwrap_used`, `expect_used` and `panic` denied.
+- CI builds and tests the CLI for the main target (Principle IV).
+- CI runs the automated check that enforces Principle V and fails on any
+  violation.
 
 ## Governance
 
@@ -142,4 +149,4 @@ paths without logging.
   rule, PATCH for wording and clarifications.
 - Violations must be justified in the plan's Complexity Tracking section.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24
+**Version**: 2.0.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24
